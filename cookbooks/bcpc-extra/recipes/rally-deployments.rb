@@ -19,7 +19,7 @@
 # Note: The rally.rb recipe must have already been executed before running this one.
 # IMPORTANT: The head nodes MUST have already been installed and the keystone endpoints working. Rally verifies.
 
-KEYSTONE_API_VERSIONS = %w{ v2.0 v3 }
+KEYSTONE_API_VERSIONS = %w{ v3 }
 rally_user = node['bcpc-extra']['rally']['user']
 rally_home_dir = node['etc']['passwd'][rally_user]['dir']
 rally_install_dir = "#{rally_home_dir}/rally"
