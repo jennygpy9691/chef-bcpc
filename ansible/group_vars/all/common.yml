@@ -1,0 +1,29 @@
+# -*- mode: yaml -*-
+# vi: set ft=yaml :
+
+root_dir: "{{ playbook_dir | dirname | dirname }}"
+
+# cloud domain name
+#
+cloud_domain: bcpc.example.com
+
+# cloud operator (os admin user)
+#
+operator_username: operations
+operator_group: operators
+
+# username and password used to access bare metal machines
+#
+initial_ssh_user: vagrant
+initial_ssh_pass: vagrant
+
+ansible_python_interpreter: /usr/bin/env python3
+ansible_ssh_common_args: '-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null'
+ansible_user: "{{ operator_username }}"
+ansible_ssh_private_key_file: "{{ playbook_dir }}/roles/localhost/files/id_ed25519"
+ssh_generate_private_key: true
+
+node_hostname: "{{ inventory_hostname }}"
+node_fqdn: "{{ inventory_hostname }}.{{ cloud_domain }}"
+node_ip: "{{ primary_ip | default(ansible_host) | ipaddr('address') }}"
+node_runlist: "{{ hostvars[inventory_hostname].run_list | join (',') }}"

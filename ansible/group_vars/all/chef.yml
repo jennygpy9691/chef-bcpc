@@ -1,0 +1,37 @@
+# -*- mode: yaml -*-
+# vi: set ft=yaml :
+
+chef_environment: virtual
+
+chef_server_host: "{{ groups['bootstraps'][0] }}"
+chef_server_ip: "{{ hostvars[chef_server_host].primary_ip  | default(ansible_host) | ipaddr('address') }}"
+chef_server_fqdn: "{{ chef_server_host }}.{{ cloud_domain }}"
+chef_server_url: "https://{{ chef_server_host }}.{{ cloud_domain }}/organizations/{{ chef_org_short_name }}"
+
+chef_workstation_host: "{{ groups['bootstraps'][0] }}"
+
+chef_org_short_name: bcpc
+chef_org_long_name: Bloomberg Clustered Private Cloud
+chef_org_validator_pem: /etc/chef/validator.pem
+
+chef_admin_username: operations
+chef_admin_password: welcome
+chef_admin_group: operators
+chef_admin_first_name: admin
+chef_admin_last_name: admin
+chef_admin_client_key: /etc/chef/operations.pem
+chef_admin_email: "operations@{{ cloud_domain }}"
+
+chef_environments_dir: "{{ root_dir }}/chef/environments"
+chef_roles_dir: "{{ root_dir }}/chef/roles"
+chef_databags_dir: "{{ root_dir }}/chef/databags"
+chef_cookbooks_dir: "{{ root_dir }}/chef/cookbooks"
+chef_external_cookbooks:
+  - logrotate
+  - hostsfile
+  - cron
+
+node_hostname: "{{ inventory_hostname }}"
+node_fqdn: "{{ inventory_hostname }}.{{ cloud_domain }}"
+node_ip: "{{ primary_ip | default(ansible_host) | ipaddr('address') }}"
+node_runlist: "{{ hostvars[inventory_hostname].run_list | join (',') }}"

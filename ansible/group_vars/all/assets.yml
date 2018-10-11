@@ -1,28 +1,6 @@
 # -*- mode: yaml -*-
 # vi: set ft=yaml :
 
-root_dir: "{{ playbook_dir | dirname | dirname }}"
-
-# cloud domain name
-#
-cloud_domain: bcpc.example.com
-
-# cloud operator (os admin user)
-#
-operator_username: operations
-operator_group: operators
-
-# username and password used to access bare metal machines
-#
-initial_ssh_user: vagrant
-initial_ssh_pass: vagrant
-
-ansible_python_interpreter: /usr/bin/env python3
-ansible_ssh_common_args: '-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null'
-ansible_user: "{{ operator_username }}"
-ansible_ssh_private_key_file: "{{ playbook_dir }}/roles/localhost/files/id_ed25519"
-ssh_generate_private_key: true
-
 file_server_assets:
   - cirros
   - etcd
@@ -30,41 +8,6 @@ file_server_assets:
   - consul
   - chef_client
   - chef_server
-
-chef_environment: virtual
-
-chef_server_host: "{{ groups['bootstraps'][0] }}"
-chef_server_ip: "{{ hostvars[chef_server_host].primary_ip  | default(ansible_host) | ipaddr('address') }}"
-chef_server_fqdn: "{{ chef_server_host }}.{{ cloud_domain }}"
-chef_server_url: "https://{{ chef_server_host }}.{{ cloud_domain }}/organizations/{{ chef_org_short_name }}"
-
-chef_workstation_host: "{{ groups['bootstraps'][0] }}"
-
-chef_org_short_name: bcpc
-chef_org_long_name: Bloomberg Clustered Private Cloud
-chef_org_validator_pem: /etc/chef/validator.pem
-
-chef_admin_username: operations
-chef_admin_password: welcome
-chef_admin_group: operators
-chef_admin_first_name: admin
-chef_admin_last_name: admin
-chef_admin_client_key: /etc/chef/operations.pem
-chef_admin_email: "operations@{{ cloud_domain }}"
-
-chef_environments_dir: "{{ root_dir }}/chef/environments"
-chef_roles_dir: "{{ root_dir }}/chef/roles"
-chef_databags_dir: "{{ root_dir }}/chef/databags"
-chef_cookbooks_dir: "{{ root_dir }}/chef/cookbooks"
-chef_external_cookbooks:
-  - logrotate
-  - hostsfile
-  - cron
-
-node_hostname: "{{ inventory_hostname }}"
-node_fqdn: "{{ inventory_hostname }}.{{ cloud_domain }}"
-node_ip: "{{ primary_ip | default(ansible_host) | ipaddr('address') }}"
-node_runlist: "{{ hostvars[inventory_hostname].run_list | join (',') }}"
 
 assets_download_dir: "{{ root_dir }}/assets"
 assets_files:
@@ -127,10 +70,6 @@ assets_files:
     url: https://supermarket.chef.io/cookbooks/cron/versions/5.1.0/download
     checksum: sha256:7c2157550e8e4bd784580ec2bf127be44327333554f9bb7a37bd17ae4bd21dfe
     filename: cron-5.1.0.tar.gz
-
-###############################################################################
-# cloud images
-###############################################################################
 
 cloud:
   images:
