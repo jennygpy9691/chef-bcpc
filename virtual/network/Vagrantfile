@@ -2,6 +2,12 @@
 # vi: set ft=ruby :
 base_box = "bento/ubuntu-18.04"
 
+
+def local_cache(basebox_name)
+  cache_dir = Vagrant::Environment.new.home_path.join('cache', 'apt', basebox_name)
+end
+
+
 def setup_proxy(node)
   http_proxy  = ENV['http_proxy']  || ''
   https_proxy = ENV['https_proxy'] || ''
@@ -20,6 +26,10 @@ Vagrant.configure(2) do |config|
         node.memory = 512
       end
       node.vm.box = base_box
+
+      cache_dir = local_cache(node.vm.box)
+      node.vm.synced_folder cache_dir, "/var/cache/apt/archives", create:true 
+
       node.vm.box_download_insecure = true
       node.vm.network "private_network", virtualbox__intnet: "tor#{i}_spine1",
        auto_config: false
