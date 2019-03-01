@@ -31,9 +31,21 @@ fi
 
 cd $virtual_dir
 
-vagrant ssh-config ${bootstrap_name} > /tmp/ssh-config.$$
+CONFFILE="/tmp/ssh-config.$$"
+vagrant ssh-config ${bootstrap_name} > $CONFFILE
 
-sudo ssh -C -F /tmp/ssh-config.$$ \
-     -L ${host_ip}:8443:10.10.254.254:443 \
-     -L ${host_ip}:2080:10.10.254.254:6080 \
-     ${bootstrap_name}
+myvip=`echo "sudo -u operations -i -- sh -c 'knife node show --long r1n1.bcpc.example.com'" | ssh -F ${CONFFILE} r1n0 | grep -i vip | awk '{print $2}'`
+
+if [[ -n "${myvip}" ]]; then
+
+    echo "*************************************************************"
+    echo "Starting SSH tunnel from ${host_ip} to ${myvip}"
+    echo "*************************************************************"
+
+    sudo ssh -C -F ${CONFFILE} \
+	 -L ${host_ip}:8443:${myvip}:443 \
+	 -L ${host_ip}:2080:${myvip}:6080 \
+	 ${bootstrap_name}
+else
+    echo "$0: Error VIP not found"
+fi
