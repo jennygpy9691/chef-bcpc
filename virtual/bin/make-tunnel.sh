@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/bash -ex
 
 # Copyright 2019, Bloomberg Finance L.P.
 #
@@ -14,38 +14,30 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-set -xe
-
 root_dir=$(git rev-parse --show-toplevel)
-
 virtual_dir="${root_dir}/virtual"
+bootstrap="r1n0"
 
-bootstrap_name="r1n0"
-
-os_name=`uname -s`
-if [[ $os_name =~ Darwin ]]; then
-    host_ip=`ipconfig getifaddr en0`
-else
-    host_ip=`hostname -i`
-fi
-
-cd $virtual_dir
+cd ${virtual_dir}
 
 CONFFILE="/tmp/ssh-config.$$"
-vagrant ssh-config ${bootstrap_name} > $CONFFILE
+vagrant ssh-config ${bootstrap_name} > ${CONFFILE}
 
-myvip=`echo "sudo -u operations -i -- sh -c 'knife node show --long r1n1.bcpc.example.com'" | ssh -F ${CONFFILE} r1n0 | grep -i vip | awk '{print $2}'`
+vip=`echo "sudo -u operations -i -- sh -c 'knife node show --long r1n1.bcpc.example.com'" | ssh -F ${CONFFILE} r1n0 | grep -i vip | awk '{print $2}'`
 
-if [[ -n "${myvip}" ]]; then
+if [[ -n "${vip}" ]]; then
 
     echo "*************************************************************"
-    echo "Starting SSH tunnel from ${host_ip} to ${myvip}"
+    echo "Starting SSH tunnel to ${vip}"
     echo "*************************************************************"
 
-    sudo ssh -C -F ${CONFFILE} \
-	 -L ${host_ip}:8443:${myvip}:443 \
-	 -L ${host_ip}:2080:${myvip}:6080 \
-	 ${bootstrap_name}
+    ssh -C -F ${CONFFILE} \
+        -L 127.0.0.1:8443:${vip}:443 \
+        -L 127.0.0.1:2080:${vip}:6080 \
+        ${bootstrap}
+
+    echo "Horizon available at:"
+    echo "https://127.0.0.1:8443/horizon/"
 else
-    echo "$0: Error VIP not found"
+    echo "${0}: Error VIP not found"
 fi
