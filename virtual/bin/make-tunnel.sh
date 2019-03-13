@@ -1,4 +1,4 @@
-#!/bin/bash -ex
+#!/bin/bash -e
 
 # Copyright 2019, Bloomberg Finance L.P.
 #
@@ -14,30 +14,28 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+env=virtual
 root_dir=$(git rev-parse --show-toplevel)
-virtual_dir="${root_dir}/virtual"
-bootstrap="r1n0"
+virtual_dir=${root_dir}/${env}
+bootstrap=r1n0
 
 cd ${virtual_dir}
 
-CONFFILE="/tmp/ssh-config.$$"
-vagrant ssh-config ${bootstrap_name} > ${CONFFILE}
+vip=$(vagrant ssh r1n0 -c "sudo -u operations -i -- sh -c 'knife environment show virtual -a override_attributes.bcpc.cloud.vip' | tail -n 1 | awk '{ print \$2 }'")
 
-vip=`echo "sudo -u operations -i -- sh -c 'knife node show --long r1n1.bcpc.example.com'" | ssh -F ${CONFFILE} r1n0 | grep -i vip | awk '{print $2}'`
-
-if [[ -n "${vip}" ]]; then
-
-    echo "*************************************************************"
-    echo "Starting SSH tunnel to ${vip}"
-    echo "*************************************************************"
-
-    ssh -C -F ${CONFFILE} \
-        -L 127.0.0.1:8443:${vip}:443 \
-        -L 127.0.0.1:2080:${vip}:6080 \
-        ${bootstrap}
-
-    echo "Horizon available at:"
-    echo "https://127.0.0.1:8443/horizon/"
-else
-    echo "${0}: Error VIP not found"
+if [ -z "${vip}" ]; then
+    echo "Error creating tunnel: VIP not found"
+    exit 1
 fi
+
+echo
+echo 'Horizon: https://127.0.0.1:8443/horizon/'
+echo
+
+ssh_tunnel_conf=/tmp/ssh-config.$$
+vagrant ssh-config ${bootstrap} > ${ssh_tunnel_conf}
+ssh -C -F ${ssh_tunnel_conf} \
+    -L 127.0.0.1:8443:${vip}:443 \
+    -L 127.0.0.1:6080:${vip}:6080 \
+    ${bootstrap}
+rm ${ssh_tunnel_conf}
