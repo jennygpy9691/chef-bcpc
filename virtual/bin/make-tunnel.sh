@@ -35,7 +35,7 @@ echo
 ssh_tunnel_conf=/tmp/ssh-config.$$
 vagrant ssh-config ${bootstrap} > ${ssh_tunnel_conf}
 ssh -C -F ${ssh_tunnel_conf} \
-    -L 127.0.0.1:8443:${vip}:443 \
-    -L 127.0.0.1:6080:${vip}:6080 \
+    -L 8443:${vip}:443 \
+    -L 6080:${vip}:6080 \
     ${bootstrap}
 rm ${ssh_tunnel_conf}
