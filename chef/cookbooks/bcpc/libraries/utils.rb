@@ -1,7 +1,7 @@
 # Cookbook Name:: bcpc
 # Library:: utils
 #
-# Copyright 2018, Bloomberg Finance L.P.
+# Copyright 2019, Bloomberg Finance L.P.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -32,6 +32,10 @@ end
 
 def worknode?
   search(:node, "role:worknode AND hostname:#{node['hostname']}").any?
+end
+
+def storagenode?
+  search(:node, "role:storagenode AND hostname:#{node['hostname']}").any?
 end
 
 def bootstraps
@@ -104,6 +108,15 @@ def os_adminrc
   }
 end
 
+def etcdctl_env
+  {
+    'ETCDCTL_API' => '3',
+    'ETCDCTL_CACERT' => node['bcpc']['etcd']['ca']['crt']['filepath'],
+    'ETCDCTL_CERT' => node['bcpc']['etcd']['client']['crt']['filepath'],
+    'ETCDCTL_KEY' => node['bcpc']['etcd']['client']['key']['filepath'],
+  }
+end
+
 def get_address(cidr)
   IPAddress(cidr).address
 end
@@ -116,18 +129,6 @@ end
 def local_ceph_rack
   node_map = node_network_map
   "rack#{node_map['rack_id']}"
-end
-
-def availability_zones
-  racks = cloud_racks
-  zone_prefix = node.chef_environment
-  racks.map { |rack| "#{zone_prefix}-#{rack['id']}" }
-end
-
-def local_host_aggregate
-  node_map = node_network_map
-  zone_prefix = node.chef_environment
-  "#{zone_prefix}-#{node_map['rack_id']}"
 end
 
 def primary_network_aggregate_cidr
@@ -184,7 +185,7 @@ end
 def node_primary_interface
   interface = node_interface(
     type: 'primary',
-    ip_address: node['ipaddress']
+    ip_address: node['service_ip']
   )
 
   interface

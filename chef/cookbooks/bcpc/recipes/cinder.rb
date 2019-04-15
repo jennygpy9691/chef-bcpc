@@ -73,36 +73,37 @@ end
 
 # create cinder volume services and endpoints starts
 begin
-  type = 'volumev3'
-  service = node['bcpc']['catalog'][type]
-  project = service['project']
+  %w(volumev2 volumev3).each do |type|
+    service = node['bcpc']['catalog'][type]
+    project = service['project']
 
-  execute "create the #{project} #{type} service" do
-    environment os_adminrc
-
-    name = service['name']
-    desc = service['description']
-
-    command <<-DOC
-      openstack service create \
-        --name "#{name}" --description "#{desc}" #{type}
-    DOC
-
-    not_if "openstack service list | grep #{type}"
-  end
-
-  %w(admin internal public).each do |uri|
-    url = generate_service_catalog_uri(service, uri)
-
-    execute "create the #{project} #{type} #{uri} endpoint" do
+    execute "create the #{project} #{type} service" do
       environment os_adminrc
 
+      name = service['name']
+      desc = service['description']
+
       command <<-DOC
-        openstack endpoint create \
-          --region #{region} #{type} #{uri} '#{url}'
+        openstack service create \
+          --name "#{name}" --description "#{desc}" #{type}
       DOC
 
-      not_if "openstack endpoint list | grep #{type} | grep #{uri}"
+      not_if "openstack service list | grep #{type}"
+    end
+
+    %w(admin internal public).each do |uri|
+      url = generate_service_catalog_uri(service, uri)
+
+      execute "create the #{project} #{type} #{uri} endpoint" do
+        environment os_adminrc
+
+        command <<-DOC
+          openstack endpoint create \
+            --region #{region} #{type} #{uri} '#{url}'
+        DOC
+
+        not_if "openstack endpoint list | grep #{type} | grep #{uri}"
+      end
     end
   end
 end
@@ -126,8 +127,17 @@ package 'cinder-volume'
 service 'cinder-api' do
   service_name 'apache2'
 end
-service 'cinder-volume'
-service 'cinder-scheduler'
+
+service 'cinder-volume' do
+  retries 10
+  retry_delay 5
+end
+
+service 'cinder-scheduler' do
+  retries 10
+  retry_delay 5
+end
+
 service 'haproxy-cinder' do
   service_name 'haproxy'
 end
@@ -224,8 +234,8 @@ end
 template '/etc/apache2/conf-available/cinder-wsgi.conf' do
   source 'cinder/cinder-wsgi.conf.erb'
   variables(
-    'processes' => node['bcpc']['cinder']['wsgi']['processes'],
-    'threads'   => node['bcpc']['cinder']['wsgi']['threads']
+    processes: node['bcpc']['cinder']['wsgi']['processes'],
+    threads: node['bcpc']['cinder']['wsgi']['threads']
   )
   notifies :run, 'execute[enable cinder wsgi]', :immediately
   notifies :restart, 'service[cinder-api]', :immediately
@@ -248,16 +258,9 @@ template '/etc/cinder/cinder.conf' do
     headnodes: headnodes(all: true)
   )
 
-  # the cinder services here are being stopped/started vs. restarted
-  # is because on some systems, the package installation and configuration
-  # happens so fast that it causes systemd to complain about the service
-  # restarting too fast.
-  notifies :stop, 'service[cinder-api]', :immediately
-  notifies :stop, 'service[cinder-volume]', :immediately
-  notifies :stop, 'service[cinder-scheduler]', :immediately
-  notifies :start, 'service[cinder-api]', :immediately
-  notifies :start, 'service[cinder-volume]', :immediately
-  notifies :start, 'service[cinder-scheduler]', :immediately
+  notifies :restart, 'service[cinder-api]', :immediately
+  notifies :restart, 'service[cinder-volume]', :immediately
+  notifies :restart, 'service[cinder-scheduler]', :immediately
 end
 # configure cinder service ends
 

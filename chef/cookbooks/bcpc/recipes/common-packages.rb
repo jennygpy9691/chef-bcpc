@@ -27,6 +27,7 @@ package 'iperf'
 package 'curl'
 package 'conntrack'
 package 'dhcpdump'
+package 'traceroute'
 
 # I/O troubleshooting tools
 package 'fio'
@@ -67,3 +68,9 @@ package 'vim'
 cookbook_file '/etc/vim/vimrc' do
   source 'vim/vimrc'
 end
+
+# some people like kornshell ¯\_(ツ)_/¯
+package 'ksh'
+
+# bash completion for operators
+package 'bash-completion'

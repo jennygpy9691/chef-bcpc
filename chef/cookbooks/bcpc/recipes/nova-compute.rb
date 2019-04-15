@@ -1,7 +1,7 @@
 # Cookbook Name:: bcpc
-# Recipe:: nova-work
+# Recipe:: nova-compute
 #
-# Copyright 2018, Bloomberg Finance L.P.
+# Copyright 2019, Bloomberg Finance L.P.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -36,7 +36,6 @@ package 'ceph'
 service 'nova-compute'
 service 'nova-api-metadata'
 service 'libvirtd'
-service 'libvirt-bin'
 
 # configure nova user starts
 user 'nova' do
@@ -56,7 +55,7 @@ file '/var/lib/nova/.ssh/authorized_keys' do
   group 'nova'
 end
 
-file '/var/lib/nova/.ssh/id_rsa' do
+file '/var/lib/nova/.ssh/id_ed25519' do
   content Base64.decode64(config['nova']['ssh']['key']).to_s
   mode '600'
   owner 'nova'
@@ -110,7 +109,6 @@ template '/etc/ceph/ceph.client.admin.keyring' do
 end
 
 %w(nova cinder).each do |user|
-
   execute "export #{user} ceph client key" do
     command <<-EOH
       ceph auth get client.#{user} -o /etc/ceph/ceph.client.#{user}.keyring
@@ -121,9 +119,7 @@ end
     mode '0640'
     group 'libvirt'
   end
-
 end
-
 
 template '/etc/nova/virsh-secret.xml' do
   source 'nova/virsh-secret.xml.erb'
@@ -146,7 +142,7 @@ bash 'load virsh secrets' do
       --base64 #{config['ceph']['client']['cinder']['key']}
   DOC
 
-  notifies :restart, 'service[libvirt-bin]', :immediately
+  notifies :restart, 'service[libvirtd]', :immediately
 end
 
 bash 'remove default virsh net' do
@@ -166,6 +162,7 @@ template '/etc/nova/nova.conf' do
     vip: node['bcpc']['cloud']['vip']
   )
   notifies :restart, 'service[nova-compute]', :immediately
+  notifies :restart, 'service[nova-api-metadata]', :immediately
 end
 
 template '/etc/nova/nova-compute.conf' do
@@ -176,8 +173,8 @@ template '/etc/nova/nova-compute.conf' do
     virt_type: node['cpu']['0']['flags'].include?('vmx') ? 'kvm' : 'qemu'
   )
 
+  notifies :restart, 'service[libvirtd]', :immediately
   notifies :restart, 'service[nova-compute]', :immediately
-  notifies :restart, 'service[nova-api-metadata]', :immediately
 end
 
 execute 'wait for compute host' do
@@ -187,17 +184,4 @@ execute 'wait for compute host' do
     openstack compute service list \
       --service nova-compute | grep #{node['hostname']}
   DOC
-end
-
-begin
-  ha = local_host_aggregate
-
-  execute "add #{node['hostname']} to the #{ha} host aggregate" do
-    environment os_adminrc
-    command "openstack aggregate add host #{ha} #{node['hostname']}"
-    not_if "
-      agg=$(openstack aggregate show #{ha} -f value -c hosts)
-      echo ${agg} | grep -w #{node['hostname']}
-    "
-  end
 end

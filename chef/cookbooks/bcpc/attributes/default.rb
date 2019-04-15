@@ -2,21 +2,13 @@
 # cloud
 ###############################################################################
 
-default['bcpc']['cloud']['domain'] = 'bcpc.example.com'
-default['bcpc']['cloud']['fqdn'] = "openstack.#{node['bcpc']['cloud']['domain']}"
 default['bcpc']['cloud']['region'] = node.chef_environment
-default['bcpc']['cloud']['vip'] = '10.10.254.254'
 
-# list of dns servers to use
-default['bcpc']['dns_servers'] = %w(8.8.8.8 8.8.4.4)
-
-# list of ntp servers to use
-default['bcpc']['ntp']['servers'] = %w(time1.google.com time2.google.com)
+###############################################################################
+# file server
+###############################################################################
 
 default['bcpc']['file_server']['url'] = 'http://bootstrap:8080'
-
-# Hypervisor domain (domain used by actual machines)
-default['bcpc']['hypervisor_domain'] = 'hypervisor-bcpc.example.com'
 
 ###############################################################################
 # ubuntu
@@ -26,7 +18,6 @@ default['bcpc']['ubuntu']['archive_url'] = 'http://archive.ubuntu.com/ubuntu'
 default['bcpc']['ubuntu']['security_url'] = 'http://security.ubuntu.com/ubuntu'
 default['bcpc']['ubuntu']['codename'] = node['lsb']['codename']
 default['bcpc']['ubuntu']['components'] = %w(main restricted universe multiverse)
-default['bcpc']['ubuntu']['arch'] = 'amd64'
 
 ###############################################################################
 # grub
@@ -171,13 +162,6 @@ default['bcpc']['metadata']['vendordata']['enabled'] = false
 # default['bcpc']['metadata']['vendordata']['driver'] = "nova.api.metadata.bcpc_metadata.BcpcMetadata"
 
 ###############################################################################
-# bird
-###############################################################################
-
-default['bcpc']['bird']['repo']['enabled'] = false
-default['bcpc']['bird']['repo']['url'] = ''
-
-###############################################################################
 # memcached
 ###############################################################################
 
@@ -185,15 +169,6 @@ default['bcpc']['bird']['repo']['url'] = ''
 default['bcpc']['memcached']['debug'] = false
 # Set number of memcached connections.
 default['bcpc']['memcached']['connections'] = 10240
-
-###############################################################################
-# etcd
-###############################################################################
-
-etcd_file = 'etcd-v3.3.10-linux-amd64.tar.gz'
-default['bcpc']['etcd']['remote']['file'] = etcd_file
-default['bcpc']['etcd']['remote']['source'] = "#{default['bcpc']['file_server']['url']}/#{etcd_file}"
-default['bcpc']['etcd']['remote']['checksum'] = '1620a59150ec0a0124a65540e23891243feb2d9a628092fb1edcc23974724a45'
 
 ###############################################################################
 # virtualbox

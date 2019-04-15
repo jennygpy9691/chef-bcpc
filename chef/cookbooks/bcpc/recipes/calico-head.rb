@@ -1,8 +1,7 @@
-#
 # Cookbook Name:: bcpc
 # Recipe:: calico-head
 #
-# Copyright 2018, Bloomberg Finance L.P.
+# Copyright 2019, Bloomberg Finance L.P.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -15,24 +14,25 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-#
+
+include_recipe 'bcpc::etcd3gw'
 include_recipe 'bcpc::calico-apt'
 
 %w(calico-control calico-common).each do |pkg|
-  package pkg do
-    action :upgrade
-  end
+  package pkg
 end
 
-directory '/etc/calico'
+directory '/etc/calico' do
+  action :create
+end
+
+etcd_endpoints = headnodes(all: true).map do |headnode|
+  "https://#{headnode['service_ip']}:2379"
+end
 
 template '/etc/calico/calicoctl.cfg' do
   source 'calico/calicoctl.cfg.erb'
-
-  headnodes = headnodes(all: true)
-  headnodes = headnodes.map { |h| "http://#{h['ipaddress']}:2379" }.join(',')
-
   variables(
-    headnodes: headnodes
+    etcd_endpoints: etcd_endpoints.join(',')
   )
 end

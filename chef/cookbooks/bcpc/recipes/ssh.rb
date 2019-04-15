@@ -18,6 +18,12 @@
 region = node['bcpc']['cloud']['region']
 config = data_bag_item(region, 'config')
 
+listen_addresses = [node['service_ip']]
+
+node['host_vars']['interfaces']['transit'].each do |transit|
+  listen_addresses.append(get_address(transit['ip']))
+end
+
 service 'ssh'
 
 directory '/root/.ssh' do
@@ -29,7 +35,7 @@ file '/root/.ssh/authorized_keys' do
   content Base64.decode64(config['ssh']['public'])
 end
 
-file '/root/.ssh/id_rsa' do
+file '/root/.ssh/id_ed25519' do
   mode '600'
   content Base64.decode64(config['ssh']['private'])
 end
@@ -45,9 +51,7 @@ end
 template '/etc/ssh/sshd_config' do
   source 'ssh/sshd_config.erb'
   variables(
-    interfaces: [
-      node_interfaces(type: 'primary'),
-    ]
+    listen_addresses: listen_addresses
   )
   notifies :restart, 'service[ssh]', :immediately
 end
